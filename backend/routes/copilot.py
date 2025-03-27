@@ -7,24 +7,10 @@ from typing import Optional
 import psycopg2
 import json
 import datetime
-from dotenv import load_dotenv
-import os
-l
-oad_dotenv()
+from db.connection import get_conn
 
 app = FastAPI()
 
-# 🧠 Postgres config (adjust as needed)
-DB_CONFIG = {
-    "dbname": os.getenv("DB_NAME"),
-    "user": os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD", ""),  # fallback if blank
-    "host": os.getenv("DB_HOST"),
-    "port": os.getenv("DB_PORT")
-}
-
-def get_conn():
-    return psycopg2.connect(**DB_CONFIG)
 
 # ✅ Model for session input
 class SessionInput(BaseModel):

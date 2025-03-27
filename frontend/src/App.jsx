@@ -28,6 +28,8 @@ export default function App() {
   const [when, setWhen] = useState("");
   const [why, setWhy] = useState("");
   const [copilotSummary, setCopilotSummary] = useState("");
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [fileStatus, setFileStatus] = useState("idle"); // 'idle', 'processing', 'done'
 
   useEffect(() => {
     const lines = [];
@@ -43,6 +45,17 @@ export default function App() {
 
     setCopilotSummary(lines.join("\n"));
   }, [who, what, why, where, when]);
+
+  useEffect(() => {
+    if (uploadedFile) {
+      setFileStatus("processing");
+  
+      // Simulate AI doc processing delay
+      setTimeout(() => {
+        setFileStatus("done");
+      }, 3000); // simulate 3 seconds background work
+    }
+  }, [uploadedFile]);
 
   const allBasicsFilled = companyName && website && therapeuticArea && phase;
 
@@ -115,6 +128,34 @@ export default function App() {
           value={why}
           onChange={(e) => setWhy(e.target.value)}
         />
+        <div className="space-y-2">
+          <label className="text-sm font-medium">📎 Upload Clinical Docs</label>
+          <input
+            type="file"
+            accept=".pdf,.doc,.docx"
+            onChange={(e) => {
+              if (e.target.files[0]) {
+                setUploadedFile(e.target.files[0]);
+                setFileStatus("idle");
+              }
+            }}
+          />
+          {uploadedFile && (
+            <p className="text-xs text-gray-600">
+              Selected: {uploadedFile.name}
+            </p>
+          )}
+          {fileStatus === "processing" && (
+            <p className="text-sm text-blue-600 animate-pulse">
+              📄 Copilot is analyzing the uploaded file...
+            </p>
+          )}
+          {fileStatus === "done" && (
+            <p className="text-sm text-green-600">
+              ✅ Copilot found useful insights based on your file. Summary updated.
+            </p>
+          )}
+        </div>
         <Button onClick={() => setStep(3)}>Finish Intake</Button>
       </CardContent>
     </Card>
