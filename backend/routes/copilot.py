@@ -1,15 +1,19 @@
 # ✅ Copilot FastAPI Endpoints (PostgreSQL)
-
-from fastapi import FastAPI, UploadFile, File, Form
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import APIRouter, UploadFile, File, Body, Form
+from logic.fivews_initialize import get_5w_context
 from pydantic import BaseModel
 from typing import Optional
 import psycopg2
 import json
 import datetime
 from db.connection import get_conn
+from io import BytesIO
+import pandas as pd
+import json
+from PyPDF2 import PdfReader
+from docx import Document
 
-app = FastAPI()
+router = APIRouter()
 
 
 # ✅ Model for session input
@@ -47,13 +51,58 @@ def create_session(session: SessionInput):
     return {"session_id": session_id, "status": "success"}
 
 # ✅ 2. Upload file content + parsed summary
-@app.post("/copilot/upload")
-def upload_file(
+from io import BytesIO
+import pandas as pd
+from PyPDF2 import PdfReader
+from docx import Document
+from fastapi import UploadFile, File, Form
+
+@router.post("/copilot/upload")
+async def upload_file(
     session_id: int = Form(...),
-    filename: str = Form(...),
-    raw_content: str = Form(...),
-    parsed: Optional[str] = Form(None)
+    file: UploadFile = File(...)
 ):
+    filename = file.filename
+    contents = await file.read()
+    ext = filename.lower().split('.')[-1]
+
+    raw_text = "(unsupported file type)"
+    try:
+        if ext == "pdf":
+            reader = PdfReader(BytesIO(contents))
+            raw_text = "\n".join([p.extract_text() or "" for p in reader.pages])
+        elif ext == "txt":
+            raw_text = contents.decode("utf-8")
+        elif ext in ["csv", "tsv"]:
+            df = pd.read_csv(BytesIO(contents))
+            raw_text = df.to_string(index=False)
+        elif ext in ["xlsx", "xls"]:
+            df = pd.read_excel(BytesIO(contents))
+            raw_text = df.to_string(index=False)
+        elif ext == "docx":
+            doc = Document(BytesIO(contents))
+            raw_text = "\n".join([p.text for p in doc.paragraphs])
+    except Exception as e:
+        raw_text = f"(Error parsing file: {str(e)})"
+
+    # Save upload + preview
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO copilot.uploads (session_id, filename, raw_content, parsed)
+        VALUES (%s, %s, %s, %s);
+    """, (session_id, filename, raw_text, None))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return {
+        "status": "upload saved",
+        "filename": filename,
+        "preview": raw_text[:300] + "..."
+    }
+
+    # Save to DB
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("""
@@ -62,13 +111,18 @@ def upload_file(
     """, (
         session_id,
         filename,
-        raw_content,
-        json.dumps(json.loads(parsed)) if parsed else None
+        raw_text,
+        None
     ))
     conn.commit()
     cur.close()
     conn.close()
-    return {"status": "upload saved"}
+
+    return {
+        "status": "upload saved",
+        "filename": filename,
+        "preview": raw_text[:300] + "..." if raw_text else "(empty)"
+    }
 
 # ✅ 3. Get full Copilot summary for a session
 @app.get("/copilot/summary/{session_id}")
@@ -86,15 +140,14 @@ def get_summary(session_id: int):
         "uploads": uploads,
     }
 
-# ✅ Optional: CORS support for frontend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
+
+# backend/routes/copilot.py
+
+@router.post("/copilot/5ws")
+def extract_5ws(prompt: str = Body(..., embed=True)):
+    structured = get_5w_context(prompt)
+    return { "five_ws": structured }
 # ---
 # 🧪 Example `curl` commands:
 
