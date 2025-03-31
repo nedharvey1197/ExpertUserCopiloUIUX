@@ -1,0 +1,38 @@
+# pipeline_config.yaml
+
+pipeline_name: "V0_Document_Enrichment"
+description: "Extracts scientific, statistical, and regulatory elements from uploaded clinical documents."
+
+stages:
+  - name: parse_document
+    enabled: true
+    parser: llamaparse  # options: llamaparse, pdfminer, gpt4, etc.
+
+  - name: enrich_scientific
+    enabled: true
+    extractor: default_scientific_rationale
+
+  - name: enrich_statistical
+    enabled: true
+    extractor: default_statistical_schema
+
+  - name: enrich_regulatory
+    enabled: true
+    extractor: default_regulatory_schema
+
+  - name: semantic_mapping
+    enabled: true
+    mapper: default_trial_mapping_rules
+
+  - name: store_outputs
+    enabled: true
+    targets:
+      - postgres
+      - neo4j
+      - vector_db  # optional for long-term RAG indexing
+
+retention:
+  keep_parsed_text: true
+  keep_intermediate_outputs: false
+  log_enrichment_confidence: true
+  trace_provenance: true

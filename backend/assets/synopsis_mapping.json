@@ -1,0 +1,44 @@
+{
+    "FiveWs_What": [
+      {"pattern": "DARPin", "value": "DARPin molecule", "therapeutic_area": "Oncology"},
+      {"pattern": "EGFR|ALK|KRAS", "value": "Targeted therapy ({MATCH})", "therapeutic_area": "Oncology"},
+      {"pattern": "Immunotherapy|Checkpoint|Pembrolizumab|Atezolizumab|Durvalumab", "value": "Immunotherapy", "therapeutic_area": "Oncology"},
+      {"pattern": "Chemotherapy|Carboplatin", "value": "Chemotherapy", "therapeutic_area": "Oncology"},
+      {"pattern": "Beta-Blocker|ACE Inhibitor|ARB|Empagliflozin|Dapagliflozin", "value": "{MATCH}", "therapeutic_area": "Cardiology"},
+      {"pattern": "Stent|Pacemaker|ICD", "value": "Device ({MATCH})", "therapeutic_area": "Cardiology"},
+      {"pattern": "Antiviral|Remdesivir", "value": "Antiviral", "therapeutic_area": "Upper Respiratory"},
+      {"pattern": "Vaccine|BNT162b2|Ad26.COV2.S", "value": "Vaccine", "therapeutic_area": "Upper Respiratory"},
+      {"pattern": "Symptomatic|Decongestant", "value": "Symptomatic Relief", "therapeutic_area": "Upper Respiratory"},
+      {"pattern": "Questionnaire|Survey", "value": "Assessment Tool", "therapeutic_area": "Any"},
+      {"pattern": "IV|Intravenous|Given IV|Administered IV", "value": "IV Therapy", "therapeutic_area": "Any"},
+      {"pattern": "PO|Oral|Given PO", "value": "Oral Therapy", "therapeutic_area": "Any"},
+      {"pattern": "Intramuscular|IM", "value": "IM Therapy", "therapeutic_area": "Any"},
+      {"pattern": ".*", "value": "Therapy", "therapeutic_area": "Any"}
+    ],
+    "FiveEs_Efficacy": [
+      {"pattern": "Progression-Free Survival|Overall Survival|PFS|OS", "value": "{MATCH}", "therapeutic_area": "Oncology"},
+      {"pattern": "Response Rate|ORR", "value": "Objective Response Rate", "therapeutic_area": "Oncology"},
+      {"pattern": "Hospitalization|Rehospitalization", "value": "Hospitalization Reduction", "therapeutic_area": "Cardiology"},
+      {"pattern": "Ejection Fraction|EF", "value": "EF Improvement", "therapeutic_area": "Cardiology"},
+      {"pattern": "MACE|Major Adverse", "value": "MACE Reduction", "therapeutic_area": "Cardiology"},
+      {"pattern": "Viral|PCR", "value": "Viral Clearance", "therapeutic_area": "Upper Respiratory"},
+      {"pattern": "Symptom|Resolution|Recovery", "value": "Symptom Resolution", "therapeutic_area": "Upper Respiratory"},
+      {"pattern": "Infection Rate", "value": "Infection Rate Reduction", "therapeutic_area": "Upper Respiratory"},
+      {"pattern": "Quality of Life|QOL", "value": "Quality of Life Improvement", "therapeutic_area": "Any"},
+      {"pattern": "Adverse Events|SAEs", "value": "Safety Profile", "therapeutic_area": "Any"},
+      {"pattern": "Ordinal Outcome", "value": "Clinical Improvement", "therapeutic_area": "Any"},
+      {"pattern": ".*", "value": "Response", "therapeutic_area": "Any"}
+    ],
+    "FiveCs_Control": [
+      {"pattern": "Immunotherapy|Checkpoint|Pembrolizumab|Atezolizumab", "value": "Monitor immune-related AEs", "therapeutic_area": "Oncology"},
+      {"pattern": "Targeted|Chemotherapy|Carboplatin", "value": "Monitor toxicity (CTCAE)", "therapeutic_area": "Oncology"},
+      {"pattern": "Beta-Blocker|ACE|Empagliflozin|Dapagliflozin", "value": "Monitor HR and BP weekly", "therapeutic_area": "Cardiology"},
+      {"pattern": "Device|Stent", "value": "Monitor device function", "therapeutic_area": "Cardiology"},
+      {"pattern": "Antiviral|Vaccine|Remdesivir|BNT162b2|Ad26.COV2.S", "value": "Monitor adverse reactions", "therapeutic_area": "Upper Respiratory"},
+      {"pattern": "Questionnaire|Survey", "value": "Monitor completion rates", "therapeutic_area": "Any"},
+      {"pattern": "IV|Intravenous|Given IV", "value": "Monitor infusion reactions", "therapeutic_area": "Any"},
+      {"pattern": "PO|Oral|Given PO", "value": "Monitor GI side effects", "therapeutic_area": "Any"},
+      {"pattern": "Intramuscular|IM", "value": "Monitor injection site reactions", "therapeutic_area": "Any"},
+      {"pattern": ".*", "value": "Standard monitoring", "therapeutic_area": "Any"}
+    ]
+  }

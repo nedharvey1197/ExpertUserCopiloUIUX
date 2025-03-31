@@ -1,5 +1,5 @@
 """
-5ws_initializer.py
+fivews_initializer.py
 
 Purpose:
 Extract structured 5Ws (Who, What, Where, When, Why) trial design fields from a raw user prompt using

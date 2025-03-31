@@ -1,6 +1,6 @@
 # ✅ Copilot FastAPI Endpoints (PostgreSQL)
-from fastapi import APIRouter, UploadFile, File, Body, Form
-from logic.fivews_initialize import get_5w_context
+from fastapi import APIRouter, UploadFile, File, Body, Form, APIRouter, HTTPException
+from logic.fivews_initializer import get_5w_context
 from pydantic import BaseModel
 from typing import Optional
 import psycopg2
@@ -9,55 +9,85 @@ import datetime
 from db.connection import get_conn
 from io import BytesIO
 import pandas as pd
-import json
 from PyPDF2 import PdfReader
 from docx import Document
+from models.session_state import CopilotSessionState  
+from utils.state_updater import update_session_state
 
 router = APIRouter()
 
-
 # ✅ Model for session input
 class SessionInput(BaseModel):
-    user_id: str
-    therapeutic_area: str
-    trial_phase: str
-    trial_condition: str
-    trial_intent: Optional[str] = None
-    file_summary: Optional[str] = None
-    ai_insights: Optional[dict] = None
+    company_name: str
+    company_website: str
+    nct_id: Optional[str] = None
 
-# ✅ 1. Create new Copilot session
-@app.post("/copilot/session")
+@router.post("/session")
 def create_session(session: SessionInput):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO copilot.sessions (user_id, therapeutic_area, trial_phase, trial_condition, trial_intent, file_summary, ai_insights)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
-        RETURNING id;
-    """, (
-        session.user_id,
-        session.therapeutic_area,
-        session.trial_phase,
-        session.trial_condition,
-        session.trial_intent,
-        session.file_summary,
-        json.dumps(session.ai_insights) if session.ai_insights else None
-    ))
-    session_id = cur.fetchone()[0]
-    conn.commit()
-    cur.close()
-    conn.close()
-    return {"session_id": session_id, "status": "success"}
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
 
-# ✅ 2. Upload file content + parsed summary
-from io import BytesIO
-import pandas as pd
-from PyPDF2 import PdfReader
-from docx import Document
-from fastapi import UploadFile, File, Form
+        # Initialize Copilot session state
+        init_state = CopilotSessionState().model_dump()
 
-@router.post("/copilot/upload")
+        cur.execute("""
+            INSERT INTO copilot.sessions (
+                company_name,
+                company_website,
+                nct_id,
+                state
+            ) VALUES (%s, %s, %s, %s)
+            RETURNING id;
+        """, (
+            session.company_name,
+            session.company_website,
+            session.nct_id,
+            json.dumps(init_state)
+        ))
+
+        session_id = cur.fetchone()[0]
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return {"session_id": session_id, "status": "success"}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+@router.post("/upload_file")
+async def upload_file(
+    company_name: str = Form(...),
+    company_website: str = Form(...),
+    nct_id: str = Form(None),
+    session_id: str = Form(...),
+    file: UploadFile = File(...)
+):
+    try:
+        # 1. Save file
+        file_location = UPLOAD_DIR / f"{session_id}_{file.filename}"
+        with open(file_location, "wb") as f:
+            f.write(await file.read())
+
+        # 2. Run enrichment pipeline
+        mapped_output = run_pipeline(str(file_location))
+
+        # 3. Return enrichment summary
+        return {
+            "session_id": session_id,
+            "summary": mapped_output,
+            "message": "Copilot enrichment complete."
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/raw_extract_upload_file")
 async def upload_file(
     session_id: int = Form(...),
     file: UploadFile = File(...)
@@ -99,33 +129,11 @@ async def upload_file(
     return {
         "status": "upload saved",
         "filename": filename,
-        "preview": raw_text[:300] + "..."
-    }
-
-    # Save to DB
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO copilot.uploads (session_id, filename, raw_content, parsed)
-        VALUES (%s, %s, %s, %s);
-    """, (
-        session_id,
-        filename,
-        raw_text,
-        None
-    ))
-    conn.commit()
-    cur.close()
-    conn.close()
-
-    return {
-        "status": "upload saved",
-        "filename": filename,
         "preview": raw_text[:300] + "..." if raw_text else "(empty)"
     }
 
 # ✅ 3. Get full Copilot summary for a session
-@app.get("/copilot/summary/{session_id}")
+@router.get("/summary/{session_id}")
 def get_summary(session_id: int):
     conn = get_conn()
     cur = conn.cursor()
@@ -144,7 +152,7 @@ def get_summary(session_id: int):
 
 # backend/routes/copilot.py
 
-@router.post("/copilot/5ws")
+@router.post("/5ws")
 def extract_5ws(prompt: str = Body(..., embed=True)):
     structured = get_5w_context(prompt)
     return { "five_ws": structured }

@@ -10,7 +10,7 @@ VERSION = "v0.1.0"
 
 def evaluate_trial_design(trial_design: Dict[str, Any]) -> Dict[str, Any]:
     try:
-        arms = trial_design.get("arms", [])
+       arms = trial_design.get("arms", [])
         model = trial_design.get("stat_model", {})
 
         if len(arms) != 2:
@@ -42,7 +42,7 @@ def evaluate_trial_design(trial_design: Dict[str, Any]) -> Dict[str, Any]:
             "observed_effect_size": effect_size,
             "required_sample_per_arm": round(required_n_per_group),
             "actual_sample_per_arm": [n1, n2],
-            "sufficient_power": n1 >= required_n_per_group and n2 >= required_n_per_group
+            "sufficient_power": n1 >= require d_n_per_group and n2 >= required_n_per_group
         }
 
         log_event(
