@@ -1,0 +1,51 @@
+{
+    "name": "clinical-trials-copilot",
+    "version": "1.0.0",
+    "description": "Clinical Trials Expert User Copilot UI/UX",
+    "scripts": {
+        "start": "vite",
+        "build": "vite build",
+        "preview": "vite preview",
+        "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+        "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+        "doc": "node scripts/documentation.js",
+        "doc:watch": "nodemon --watch frontend/src --watch backend --ext js,jsx,ts,tsx,py --exec 'npm run doc'",
+        "doc:generate": "typedoc --out docs/api frontend/src && sphinx-build -b html docs/source docs/build"
+    },
+    "dependencies": {
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "react-router-dom": "^6.22.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.2.55",
+        "@types/react-dom": "^18.2.19",
+        "@typescript-eslint/eslint-plugin": "^6.21.0",
+        "@typescript-eslint/parser": "^6.21.0",
+        "@vitejs/plugin-react": "^4.2.1",
+        "eslint": "^8.56.0",
+        "eslint-plugin-react-hooks": "^4.6.0",
+        "eslint-plugin-react-refresh": "^0.4.5",
+        "glob": "^10.3.10",
+        "nodemon": "^3.0.3",
+        "prettier": "^3.5.3",
+        "typedoc": "^0.25.12",
+        "typescript": "^5.2.2",
+        "vite": "^5.1.0"
+    },
+    "main": ".eslintrc.js",
+    "directories": {
+        "doc": "docs"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/nedharvey1197/ExpertUserCopiloUIUX.git"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/nedharvey1197/ExpertUserCopiloUIUX/issues"
+    },
+    "homepage": "https://github.com/nedharvey1197/ExpertUserCopiloUIUX#readme"
+}

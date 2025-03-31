@@ -1,0 +1,113 @@
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "files.autoSave": "onFocusChange",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.trimFinalNewlines": true,
+  "editor.quickSuggestions": {
+    "strings": true
+  },
+  "javascript.suggest.completeFunctionCalls": true,
+  "typescript.suggest.completeFunctionCalls": true,
+  "python.analysis.typeCheckingMode": "basic",
+  "python.analysis.autoImportCompletions": true,
+  "python.analysis.inlayHints.functionReturnTypes": true,
+  "python.analysis.inlayHints.variableTypes": true,
+  "python.analysis.diagnosticMode": "workspace",
+  "python.analysis.autoSearchPaths": true,
+  "python.analysis.extraPaths": ["${workspaceFolder}/src", "${workspaceFolder}/tests"],
+  "python.analysis.stubPath": "typings",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportMissingImports": "warning",
+    "reportMissingTypeStubs": "none",
+    "reportUnknownMemberType": "none",
+    "reportUnknownParameterType": "none",
+    "reportUnknownVariableType": "none"
+  },
+  "python.analysis.completeFunctionParens": true,
+  "python.analysis.indexing": true,
+  "python.analysis.packageIndexDepths": [
+    {
+      "name": "pandas",
+      "depth": 2
+    },
+    {
+      "name": "numpy",
+      "depth": 2
+    }
+  ],
+  "python.formatting.provider": "black",
+  "python.formatting.blackArgs": ["--line-length", "100"],
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true,
+  "python.linting.pylintArgs": ["--max-line-length=100", "--disable=C0111"],
+  "python.linting.flake8Enabled": false,
+  "python.linting.mypyEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.nosetestsEnabled": false,
+  "python.testing.pytestArgs": ["tests"],
+  "python.testing.autoTestDiscoverOnSaveEnabled": true,
+  "python.terminal.activateEnvironment": true,
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.terminal.executeInFileDir": true,
+  "python.debugger.javascript.javascript": true,
+  "python.debugger.javascript.autoAttachFilter": "always",
+  "python.analysis.autoDocstringFormat": "google",
+  "python.analysis.autoDocstring": true,
+  "python.snippets.python": {
+    "docstring": {
+      "prefix": "doc",
+      "body": [
+        "\"\"\"${1:docstring}\"\"\"",
+        "",
+        "Args:",
+        "    ${2:arg1} (${3:type}): ${4:description}",
+        "",
+        "Returns:",
+        "    ${5:type}: ${6:description}",
+        "",
+        "Raises:",
+        "    ${7:exception}: ${8:description}",
+        ""
+      ],
+      "description": "Insert a Google-style docstring"
+    }
+  },
+  "files.associations": {
+    "*.py": "python",
+    "*.pyi": "python",
+    "*.pyx": "python",
+    "*.pyd": "python"
+  },
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    "**/.mypy_cache": true,
+    "**/.coverage": true,
+    "**/.tox": true,
+    "**/.venv": true,
+    "**/venv": true,
+    "**/.env": true,
+    "**/.env.*": true
+  },
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "tailwindCSS.includeLanguages": {
+    "typescript": "typescript",
+    "typescriptreact": "typescriptreact"
+  },
+  "tailwindCSS.emmetCompletions": true,
+  "tailwindCSS.validate": true,
+  "cSpell.enabled": true,
+  "cSpell.words": ["tailwindcss", "postcss", "autoprefixer"],
+  "gitlens.codeLens.enabled": true,
+  "gitlens.currentLine.enabled": true,
+  "gitlens.hovers.currentLine.over": "line",
+  "gitlens.blame.highlight.enabled": true,
+  "gitlens.blame.format": "${author|10-} ${date|14-} ${message|40-}"
+}

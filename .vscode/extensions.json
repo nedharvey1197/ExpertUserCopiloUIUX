@@ -1,0 +1,20 @@
+{
+  "recommendations": [
+    // Core Development
+    "esbenp.prettier-vscode", // Code formatting
+    "ms-vscode.vscode-eslint", // JavaScript/TypeScript linting
+    "streetsidesoftware.code-spell-checker", // Spell checking in code
+    // Python Support
+    "ms-python.python", // Python language support
+    "ms-python.pylance", // Python language server
+    // JavaScript/React Support
+    "christian-kohler.npm-intellisense", // npm package suggestions
+    "christian-kohler.path-intellisense", // Path autocompletion
+    "formulahendry.auto-rename-tag", // Auto-rename HTML/JSX tags
+    "formulahendry.auto-close-tag", // Auto-close HTML/JSX tags
+    "bradlc.vscode-tailwindcss", // Tailwind CSS support
+    // Documentation & Git
+    "mikestead.dotenv", // .env file support
+    "eamodio.gitlens" // Git integration and blame
+  ]
+}
