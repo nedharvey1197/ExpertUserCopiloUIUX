@@ -6,32 +6,29 @@ import StageThreeSynopsis from '../components/StageThreeSynopsis';
 export default function IntakeFlow() {
   const [stage, setStage] = useState(1);
   const [copilotData, setCopilotData] = useState({});
-  const [feedback, setFeedback] = useState([]);
+  const [_feedback, setFeedback] = useState([]);
 
-  const handleNextStage = () => setStage((prev) => Math.min(prev + 1, 3));
-  const handlePrevStage = () => setStage((prev) => Math.max(prev - 1, 1));
+  const handleNextStage = () => setStage(prev => Math.min(prev + 1, 3));
+  const handlePrevStage = () => setStage(prev => Math.max(prev - 1, 1));
 
-  const updateCopilotData = (newData) => {
-    setCopilotData((prev) => ({ ...prev, ...newData }));
+  const updateCopilotData = newData => {
+    setCopilotData(prev => ({ ...prev, ...newData }));
   };
 
-  const recordFeedback = (entry) => {
-    setFeedback((prev) => [...prev, entry]);
+  const recordFeedback = entry => {
+    setFeedback(prev => [...prev, entry]);
     // Later: send to backend or persist
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="max-w-4xl mx-auto p-4 dark:bg-gray-900 dark:text-gray-100">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Clinical Copilot Trial Intake</h1>
-        <p className="text-sm text-gray-600">Stage {stage} of 3</p>
+        <h1 className="text-2xl font-bold dark:text-gray-100">Clinical Copilot Trial Intake</h1>
+        <p className="text-sm text-gray-600 dark:text-gray-300">Stage {stage} of 3</p>
       </div>
 
       {stage === 1 && (
-        <StageOneIntake
-          onComplete={handleNextStage}
-          updateData={updateCopilotData}
-        />
+        <StageOneIntake onComplete={handleNextStage} updateData={updateCopilotData} />
       )}
 
       {stage === 2 && (

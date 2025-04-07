@@ -11,11 +11,11 @@ const StageOneIntake = ({ updateData, onComplete }) => {
 
   // Create session on mount
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async e => {
     e.preventDefault();
     setLoading(true);
     setCopilotMessage('Creating session and uploading...');
-  
+
     try {
       // ✅ 1. Create session with form data
       const sessionRes = await fetch('http://localhost:8000/copilot/session', {
@@ -24,44 +24,48 @@ const StageOneIntake = ({ updateData, onComplete }) => {
         body: JSON.stringify({
           company_name: company,
           company_website: website,
-          nct_id: nctId
-        })
+          nct_id: nctId,
+        }),
       });
-  
-      if (!sessionRes.ok) throw new Error("Session creation failed");
+
+      if (!sessionRes.ok) throw new Error('Session creation failed');
       const sessionData = await sessionRes.json();
       const sessionId = sessionData.session_id;
-  
+
       // ✅ 2. Upload file and trigger enrichment
-      const formData = new FormData();
-      formData.append('session_id', sessionId);
-      formData.append('company_name', company);
-      formData.append('company_website', website);
-      formData.append('nct_id', nctId);
-      if (file) formData.append('file', file);
-  
-      const uploadRes = await fetch('http://localhost:8000/copilot/upload_file', {
-        method: 'POST',
-        body: formData,
-      });
-  
-      if (!uploadRes.ok) throw new Error("Upload failed");
-      const uploadResult = await uploadRes.json();
-      console.log("Upload result:", uploadResult);
-  
-      updateData(uploadResult);
-  
+      if (file) {
+        const formData = new FormData();
+        formData.append('session_id', sessionId);
+        formData.append('file', file);
+
+        const uploadRes = await fetch('http://localhost:8000/copilot/upload_file', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!uploadRes.ok) {
+          const errorData = await uploadRes.json();
+          throw new Error(errorData.detail || 'Upload failed');
+        }
+        const uploadResult = await uploadRes.json();
+        console.log('Upload result:', uploadResult);
+        updateData(uploadResult);
+      }
+
       // ✅ 3. Fetch summary
-      const summaryRes = await fetch(`/copilot/summary/${sessionId}`);
+      const summaryRes = await fetch(`http://localhost:8000/copilot/summary/${sessionId}`);
+      if (!summaryRes.ok) {
+        throw new Error('Failed to fetch summary');
+      }
       const summary = await summaryRes.json();
       updateData({ summary });
-  
+
       setCopilotMessage('Copilot enrichment complete.');
       setLoading(false);
       onComplete();
     } catch (err) {
       console.error('Error during upload flow:', err);
-      setCopilotMessage('An error occurred during Copilot enrichment.');
+      setCopilotMessage(`Error: ${err.message}`);
       setLoading(false);
     }
   };
@@ -77,7 +81,7 @@ const StageOneIntake = ({ updateData, onComplete }) => {
             type="text"
             className="w-full border p-2 rounded"
             value={company}
-            onChange={(e) => setCompany(e.target.value)}
+            onChange={e => setCompany(e.target.value)}
             required
           />
         </div>
@@ -88,7 +92,7 @@ const StageOneIntake = ({ updateData, onComplete }) => {
             type="url"
             className="w-full border p-2 rounded"
             value={website}
-            onChange={(e) => setWebsite(e.target.value)}
+            onChange={e => setWebsite(e.target.value)}
             required
           />
         </div>
@@ -99,7 +103,7 @@ const StageOneIntake = ({ updateData, onComplete }) => {
             type="text"
             className="w-full border p-2 rounded"
             value={nctId}
-            onChange={(e) => setNctId(e.target.value)}
+            onChange={e => setNctId(e.target.value)}
           />
         </div>
 
@@ -108,14 +112,12 @@ const StageOneIntake = ({ updateData, onComplete }) => {
           <input
             type="file"
             className="w-full"
-            onChange={(e) => setFile(e.target.files[0])}
+            onChange={e => setFile(e.target.files[0])}
             accept=".pdf,.docx,.txt,.csv,.tsv,.xlsx"
           />
         </div>
 
-        {copilotMessage && (
-          <p className="text-sm text-blue-600">{copilotMessage}</p>
-        )}
+        {copilotMessage && <p className="text-sm text-blue-600">{copilotMessage}</p>}
 
         <button
           type="submit"

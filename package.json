@@ -1,51 +1,68 @@
 {
-    "name": "clinical-trials-copilot",
-    "version": "1.0.0",
-    "description": "Clinical Trials Expert User Copilot UI/UX",
-    "scripts": {
-        "start": "vite",
-        "build": "vite build",
-        "preview": "vite preview",
-        "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
-        "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
-        "doc": "node scripts/documentation.js",
-        "doc:watch": "nodemon --watch frontend/src --watch backend --ext js,jsx,ts,tsx,py --exec 'npm run doc'",
-        "doc:generate": "typedoc --out docs/api frontend/src && sphinx-build -b html docs/source docs/build"
-    },
-    "dependencies": {
-        "react": "^18.2.0",
-        "react-dom": "^18.2.0",
-        "react-router-dom": "^6.22.0"
-    },
-    "devDependencies": {
-        "@types/react": "^18.2.55",
-        "@types/react-dom": "^18.2.19",
-        "@typescript-eslint/eslint-plugin": "^6.21.0",
-        "@typescript-eslint/parser": "^6.21.0",
-        "@vitejs/plugin-react": "^4.2.1",
-        "eslint": "^8.56.0",
-        "eslint-plugin-react-hooks": "^4.6.0",
-        "eslint-plugin-react-refresh": "^0.4.5",
-        "glob": "^10.3.10",
-        "nodemon": "^3.0.3",
-        "prettier": "^3.5.3",
-        "typedoc": "^0.25.12",
-        "typescript": "^5.2.2",
-        "vite": "^5.1.0"
-    },
-    "main": ".eslintrc.js",
-    "directories": {
-        "doc": "docs"
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/nedharvey1197/ExpertUserCopiloUIUX.git"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "bugs": {
-        "url": "https://github.com/nedharvey1197/ExpertUserCopiloUIUX/issues"
-    },
-    "homepage": "https://github.com/nedharvey1197/ExpertUserCopiloUIUX#readme"
+  "name": "clinical-trials-copilot",
+  "version": "1.0.0",
+  "description": "Clinical Trials Expert User Copilot UI/UX",
+  "scripts": {
+    "start": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "doc": "node scripts/documentCode.js frontend/src",
+    "doc:watch": "nodemon --watch frontend/src --ext js,jsx,ts,tsx --exec 'npm run doc'",
+    "doc:check": "node scripts/documentCode.js frontend/src --check",
+    "doc:update": "node scripts/documentCode.js frontend/src --update",
+    "check:standards": "node scripts/checkStandards.js check",
+    "fix:standards": "node scripts/checkStandards.js fix",
+    "init:project": "node scripts/checkStandards.js init",
+    "validate": "npm run lint && npm run doc:check && npm run check:standards",
+    "doc:python": "python scripts/documentPython.py backend",
+    "doc:python:watch": "nodemon --watch backend --ext py --exec 'npm run doc:python'",
+    "doc:python:check": "python scripts/documentPython.py backend --check",
+    "doc:python:update": "python scripts/documentPython.py backend --update",
+    "doc:all": "npm run doc && npm run doc:python",
+    "doc:all:watch": "concurrently \"npm run doc:watch\" \"npm run doc:python:watch\"",
+    "doc:all:check": "npm run doc:check && npm run doc:python:check",
+    "doc:all:update": "npm run doc:update && npm run doc:python:update",
+    "validate:env": "node scripts/validateEnv.js",
+    "validate:all": "npm run validate:env && npm run validate",
+    "check:env": "node scripts/checkEnvironment.js",
+    "check:all": "npm run check:env && npm run check:standards && npm run validate:all"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.22.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "glob": "^10.4.5",
+    "nodemon": "^3.1.9",
+    "prettier": "^3.5.3",
+    "typedoc": "^0.25.12",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.0"
+  },
+  "main": ".eslintrc.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nedharvey1197/ExpertUserCopiloUIUX.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nedharvey1197/ExpertUserCopiloUIUX/issues"
+  },
+  "homepage": "https://github.com/nedharvey1197/ExpertUserCopiloUIUX#readme"
 }

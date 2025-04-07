@@ -1,183 +1,280 @@
-# ✅ Copilot FastAPI Endpoints (PostgreSQL)
-from fastapi import APIRouter, UploadFile, File, Body, Form, APIRouter, HTTPException
-from logic.fivews_initializer import get_5w_context
+"""
+Copilot routes for handling trial design assistance.
+"""
+from fastapi import APIRouter, UploadFile, File, Body, Form, HTTPException
 from pydantic import BaseModel
-from typing import Optional
-import psycopg2
+from typing import Optional, Dict, Any, List
 import json
-import datetime
-from db.connection import get_conn
+from datetime import datetime
 from io import BytesIO
 import pandas as pd
 from PyPDF2 import PdfReader
 from docx import Document
-from models.session_state import CopilotSessionState  
+from pathlib import Path
+
+from backend.db.connection import get_conn
+from models.session_state import CopilotSessionState, FileInsight
 from utils.state_updater import update_session_state
+from backend.etl.pipeline_runner import PipelineRunner
+from logic.fivews_initializer import get_5w_context
+from backend.utils.logger import setup_logger
+
+# Set up module logger
+logger = setup_logger(__name__)
 
 router = APIRouter()
+
+# Initialize pipeline runner
+pipeline = PipelineRunner()
 
 # ✅ Model for session input
 class SessionInput(BaseModel):
     company_name: str
-    company_website: str
+    company_website: Optional[str] = None
     nct_id: Optional[str] = None
 
+# Ensure the uploads directory exists
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+@router.post("/upload_file")
+async def upload_file(
+    session_id: int = Form(...),
+    file: UploadFile = File(...)
+):
+    """
+    Handle file upload and process through ETL pipeline.
+
+    Flow:
+    1. Validate session exists and get session info
+    2. Save uploaded file to disk
+    3. Run ETL pipeline on the file
+    4. Return enrichment results
+
+    Args:
+        session_id: Active session identifier (integer)
+        file: Uploaded file (PDF/DOCX/TXT)
+
+    Returns:
+        dict: Contains session_id, enrichment summary, and status message
+
+    Raises:
+        HTTPException: If session not found (404) or processing fails (500)
+    """
+    logger.info(f"Starting file upload processing for session {session_id}")
+    logger.debug(f"File details - Name: {file.filename}, Content-Type: {file.content_type}")
+
+    try:
+        # 1. Get session info from database
+        logger.info("Fetching session info")
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT company_name, company_website, nct_id FROM copilot.sessions WHERE id = %s",
+            (session_id,)
+        )
+        session = cur.fetchone()
+        if not session:
+            logger.error(f"Session {session_id} not found")
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        company_name, company_website, nct_id = session
+        logger.debug(f"Session info - Company: {company_name}, Website: {company_website}, NCT ID: {nct_id}")
+
+        # 2. Save file
+        logger.info("Saving uploaded file")
+        file_location = UPLOAD_DIR / f"{session_id}_{file.filename}"
+        with open(file_location, "wb") as f:
+            content = await file.read()
+            f.write(content)
+            logger.debug(f"Saved file to {file_location} ({len(content)} bytes)")
+
+        # 3. Run enrichment pipeline
+        logger.info("Starting ETL pipeline")
+        pipeline_results = await pipeline.run_pipeline(
+            document_paths=[str(file_location)],
+            website_url=company_website,
+            nct_id=nct_id
+        )
+        logger.debug("Pipeline completed successfully")
+
+        # 4. Prepare and return response
+        response = {
+            "session_id": session_id,
+            "summary": pipeline_results,
+            "message": "Copilot enrichment complete."
+        }
+        logger.info(f"File processing completed for session {session_id}")
+        return response
+
+    except Exception as e:
+        logger.error(f"Failed to process file: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    finally:
+        cur.close()
+        conn.close()
+
 @router.post("/session")
-def create_session(session: SessionInput):
+async def create_session(session: SessionInput):
+    """Create a new copilot session."""
+    logger.info(f"Creating new session for company: {session.company_name}")
     try:
         conn = get_conn()
         cur = conn.cursor()
 
         # Initialize Copilot session state
-        init_state = CopilotSessionState().model_dump()
+        init_state = CopilotSessionState(session_id=None).model_dump()
+        logger.debug(f"Initialized session state: {init_state}")
 
         cur.execute("""
             INSERT INTO copilot.sessions (
                 company_name,
                 company_website,
                 nct_id,
-                state
-            ) VALUES (%s, %s, %s, %s)
+                state,
+                created_at
+            ) VALUES (%s, %s, %s, %s, %s)
             RETURNING id;
         """, (
             session.company_name,
             session.company_website,
             session.nct_id,
-            json.dumps(init_state)
+            json.dumps(init_state),
+            datetime.utcnow()
         ))
 
         session_id = cur.fetchone()[0]
         conn.commit()
-        cur.close()
-        conn.close()
 
-        return {"session_id": session_id, "status": "success"}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-UPLOAD_DIR = Path("uploads")
-UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-@router.post("/upload_file")
-async def upload_file(
-    company_name: str = Form(...),
-    company_website: str = Form(...),
-    nct_id: str = Form(None),
-    session_id: str = Form(...),
-    file: UploadFile = File(...)
-):
-    try:
-        # 1. Save file
-        file_location = UPLOAD_DIR / f"{session_id}_{file.filename}"
-        with open(file_location, "wb") as f:
-            f.write(await file.read())
-
-        # 2. Run enrichment pipeline
-        mapped_output = run_pipeline(str(file_location))
-
-        # 3. Return enrichment summary
         return {
             "session_id": session_id,
-            "summary": mapped_output,
-            "message": "Copilot enrichment complete."
+            "company_name": session.company_name,
+            "created_at": datetime.utcnow().isoformat(),
+            "state": init_state
         }
 
     except Exception as e:
+        logger.error(f"Failed to create session: {str(e)}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/raw_extract_upload_file")
-async def upload_file(
-    session_id: int = Form(...),
-    file: UploadFile = File(...)
+    finally:
+        cur.close()
+        conn.close()
+
+@router.post("/session/{session_id}/files")
+async def upload_files(
+    session_id: int,
+    files: List[UploadFile] = File(...)
 ):
-    filename = file.filename
-    contents = await file.read()
-    ext = filename.lower().split('.')[-1]
-
-    raw_text = "(unsupported file type)"
+    """Handle file uploads and process through ETL pipeline."""
     try:
-        if ext == "pdf":
-            reader = PdfReader(BytesIO(contents))
-            raw_text = "\n".join([p.extract_text() or "" for p in reader.pages])
-        elif ext == "txt":
-            raw_text = contents.decode("utf-8")
-        elif ext in ["csv", "tsv"]:
-            df = pd.read_csv(BytesIO(contents))
-            raw_text = df.to_string(index=False)
-        elif ext in ["xlsx", "xls"]:
-            df = pd.read_excel(BytesIO(contents))
-            raw_text = df.to_string(index=False)
-        elif ext == "docx":
-            doc = Document(BytesIO(contents))
-            raw_text = "\n".join([p.text for p in doc.paragraphs])
+        if not files:
+            raise HTTPException(status_code=400, detail="No files provided")
+
+        conn = get_conn()
+        cur = conn.cursor()
+
+        # Validate session exists
+        cur.execute(
+            "SELECT company_name FROM copilot.sessions WHERE id = %s",
+            (session_id,)
+        )
+
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        upload_results = []
+        for file in files:
+            # Save file and create upload record
+            file_path = f"uploads/{session_id}/{file.filename}"
+            Path(f"uploads/{session_id}").mkdir(parents=True, exist_ok=True)
+
+            contents = await file.read()
+            with open(file_path, "wb") as f:
+                f.write(contents)
+
+            cur.execute(
+                """
+                INSERT INTO copilot.uploads (
+                    session_id,
+                    file_name,
+                    file_path,
+                    uploaded_at
+                )
+                VALUES (%s, %s, %s, %s)
+                RETURNING id
+                """,
+                (
+                    session_id,
+                    file.filename or "unnamed_file",  # Ensure we never pass None
+                    file_path,
+                    datetime.utcnow()
+                )
+            )
+
+            upload_id = cur.fetchone()[0]
+
+            # Process file through pipeline
+            pipeline_results = await pipeline.run_pipeline(document_paths=[file_path])
+
+            upload_results.append({
+                "upload_id": upload_id,
+                "file_name": file.filename,
+                "pipeline_results": pipeline_results
+            })
+
+        conn.commit()
+        return upload_results
+
     except Exception as e:
-        raw_text = f"(Error parsing file: {str(e)})"
+        logger.error(f"Failed to upload files: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
 
-    # Save upload + preview
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("""
-        INSERT INTO copilot.uploads (session_id, filename, raw_content, parsed)
-        VALUES (%s, %s, %s, %s);
-    """, (session_id, filename, raw_text, None))
-    conn.commit()
-    cur.close()
-    conn.close()
+    finally:
+        cur.close()
+        conn.close()
 
-    return {
-        "status": "upload saved",
-        "filename": filename,
-        "preview": raw_text[:300] + "..." if raw_text else "(empty)"
-    }
+@router.get("/session/{session_id}/files")
+async def get_files(session_id: int):
+    """Get files associated with a session."""
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
 
-# ✅ 3. Get full Copilot summary for a session
-@router.get("/summary/{session_id}")
-def get_summary(session_id: int):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM copilot.sessions WHERE id = %s", (session_id,))
-    session = cur.fetchone()
-    cur.execute("SELECT filename, raw_content, parsed FROM copilot.uploads WHERE session_id = %s", (session_id,))
-    uploads = cur.fetchall()
-    cur.close()
-    conn.close()
-    return {
-        "session": session,
-        "uploads": uploads,
-    }
+        # Get uploads with insights
+        cur.execute(
+            """
+            SELECT
+                u.id,
+                u.file_name,
+                u.file_path,
+                u.uploaded_at,
+                fi.insights
+            FROM copilot.uploads u
+            LEFT JOIN copilot.file_insights fi ON fi.upload_id = u.id
+            WHERE u.session_id = %s
+            ORDER BY u.uploaded_at DESC
+            """,
+            (session_id,)
+        )
 
+        files = []
+        for row in cur.fetchall():
+            files.append({
+                'upload_id': row[0],
+                'file_name': row[1],
+                'file_path': row[2],
+                'uploaded_at': row[3].isoformat(),
+                'insights': row[4]
+            })
 
+        return files
 
-# backend/routes/copilot.py
+    except Exception as e:
+        logger.error(f"Error fetching files: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/5ws")
-def extract_5ws(prompt: str = Body(..., embed=True)):
-    structured = get_5w_context(prompt)
-    return { "five_ws": structured }
-# ---
-# 🧪 Example `curl` commands:
-
-# 1. Create a session
-# curl -X POST http://localhost:8000/copilot/session \
-#   -H "Content-Type: application/json" \
-#   -d '{
-#         "user_id": "ned123",
-#         "therapeutic_area": "Oncology",
-#         "trial_phase": "Phase 1",
-#         "trial_condition": "NSCLC",
-#         "trial_intent": "First-in-human dose escalation",
-#         "file_summary": "Pipeline overview uploaded.",
-#         "ai_insights": {"strategy": "3+3 design"}
-#     }'
-
-# 2. Upload file (form-data)
-# curl -X POST http://localhost:8000/copilot/upload \
-#   -F "session_id=1" \
-#   -F "filename=pipeline.pdf" \
-#   -F "raw_content=Full text of uploaded file..." \
-#   -F 'parsed={"design": "dose escalation", "notes": "HER2+ target"}'
-
-# 3. Retrieve full session summary
-# curl http://localhost:8000/copilot/summary/1
+    finally:
+        cur.close()
+        conn.close()
